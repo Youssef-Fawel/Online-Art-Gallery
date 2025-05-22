@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/header :: head('User Management')}">
+  <title>User Management - Art Gallery</title>
+</head>
+<body class="bg-light">
+<!-- Include the header -->
+<div th:replace="~{fragments/header :: header}"></div>
+
+<div class="container-fluid">
+  <div class="row">
+    <!-- Sidebar - Enhanced with better styling -->
+    <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block bg-white shadow-sm sidebar collapse">
+      <div class="position-sticky pt-4">
+        <div class="text-center mb-4 d-none d-md-block">
+          <div class="avatar-circle mx-auto mb-3 bg-primary">
+            <i class="bi bi-shield-lock-fill display-4 text-white"></i>
+          </div>
+          <h5 class="fw-bold">Admin Panel</h5>
+          <p class="small text-muted">Art Gallery Management</p>
+        </div>
+        <ul class="nav flex-column">
+          <li class="nav-item mb-2">
+            <a class="nav-link rounded py-2 px-3" th:href="${#authorization.expression('hasRole(''ROLE_ADMIN'')') ? '/admin/dashboard' : '/dashboard'}">
+              <i class="bi bi-speedometer2 me-2"></i> Dashboard
+            </a>
+          </li>
+          <li class="nav-item mb-2">
+            <a class="nav-link rounded py-2 px-3" th:href="@{/artists}">
+              <i class="bi bi-person-badge me-2"></i> Artists Management
+            </a>
+          </li>
+          <li class="nav-item mb-2">
+            <a class="nav-link rounded py-2 px-3" th:href="@{/artworks}">
+              <i class="bi bi-image me-2"></i> Artworks Management
+            </a>
+          </li>
+          <li class="nav-item mb-2">
+            <a class="nav-link active rounded py-2 px-3" th:href="@{/admin/users}">
+              <i class="bi bi-people me-2"></i> Users Management
+            </a>
+          </li>
+          <li class="nav-item mb-2">
+            <a class="nav-link rounded py-2 px-3" th:href="@{/dashboard/profile}">
+              <i class="bi bi-person me-2"></i> Profile Management
+            </a>
+          </li>
+          <li class="nav-item mt-4">
+            <form th:action="@{/logout}" method="post">
+              <button class="nav-link border-0 bg-transparent text-danger rounded py-2 px-3 w-100 text-start" type="submit">
+                <i class="bi bi-box-arrow-right me-2"></i> Logout
+              </button>
+            </form>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- Main content - Enhanced with better spacing and card designs -->
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+      <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-4 border-bottom">
+        <div>
+          <h1 class="h2 fw-bold mb-0">User Management</h1>
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+              <li class="breadcrumb-item"><a th:href="@{/admin/dashboard}">Dashboard</a></li>
+              <li class="breadcrumb-item active" aria-current="page">Users</li>
+            </ol>
+          </nav>
+        </div>
+        <div class="btn-toolbar mb-2 mb-md-0">
+          <div class="btn-group me-2">
+            <a th:href="@{/admin/users/add}" class="btn btn-primary">
+              <i class="bi bi-plus-circle me-1"></i> Add User
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Success/Error Messages -->
+      <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+        <div class="d-flex align-items-center">
+          <i class="bi bi-check-circle-fill me-2 fs-4"></i>
+          <span th:text="${successMessage}">Success message</span>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+
+      <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+        <div class="d-flex align-items-center">
+          <i class="bi bi-exclamation-triangle-fill me-2 fs-4"></i>
+          <span th:text="${errorMessage}">Error message</span>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+
+      <!-- Enhanced Search and Filter Form -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3">
+          <h5 class="mb-0 fw-bold">
+            <i class="bi bi-funnel me-2 text-primary"></i>Search & Filter
+          </h5>
+        </div>
+        <div class="card-body">
+          <form th:action="@{/admin/users}" method="get" class="row g-3">
+            <div class="col-md-4">
+              <label for="search" class="form-label">Keyword</label>
+              <div class="input-group">
+                                    <span class="input-group-text bg-light">
+                                        <i class="bi bi-search"></i>
+                                    </span>
+                <input type="text" class="form-control" id="search" name="search"
+                       th:value="${search}" placeholder="Search by username, email or name...">
+              </div>
+            </div>
+            <div class="col-md-3">
+              <label for="role" class="form-label">Role</label>
+              <select class="form-select" id="role" name="role">
+                <option value="">All Roles</option>
+                <option value="ROLE_ADMIN" th:selected="${role != null && role == 'ROLE_ADMIN'}">Admin</option>
+                <option value="ROLE_USER" th:selected="${role != null && role == 'ROLE_USER'}">User</option>
+                <!-- Add other roles if needed -->
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label for="status" class="form-label">Status</label>
+              <select class="form-select" id="status" name="status">
+                <option value="">All Statuses</option>
+                <option value="true" th:selected="${status != null && status == 'true'}">Active</option>
+                <option value="false" th:selected="${status != null && status == 'false'}">Inactive</option>
+              </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+              <div class="d-grid gap-2 w-100">
+                <button type="submit" class="btn btn-primary">
+                  <i class="bi bi-filter me-1"></i> Apply Filters
+                </button>
+                <a th:href="@{/admin/users}" class="btn btn-outline-secondary">
+                  <i class="bi bi-x-circle me-1"></i> Reset
+                </a>
+              </div>
+            </div>
+            <!-- Hidden input for page size -->
+            <input type="hidden" name="size" th:value="${size != null ? size : 10}">
+          </form>
+        </div>
+      </div>
+
+      <!-- Users Table -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white py-3">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold">
+              <i class="bi bi-people me-2 text-primary"></i>All Users
+            </h5>
+            <span class="text-muted small" th:if="${totalItems > 0}">
+                                Showing <span class="fw-bold" th:text="${users.size()}">10</span> of
+                                <span class="fw-bold" th:text="${totalItems}">100</span> users
+                            </span>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+              <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr th:if="${users == null || users.empty}">
+                <td colspan="7" class="text-center py-4">
+                  <div class="alert alert-info mb-0">
+                    <i class="bi bi-info-circle me-2"></i> No users found matching your criteria.
+                  </div>
+                </td>
+              </tr>
+              <tr th:each="user : ${users}" class="align-middle">
+                <td th:text="${user.id}">1</td>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <div class="avatar-sm bg-primary bg-opacity-10 rounded-circle me-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                      <i class="bi bi-person text-primary"></i>
+                    </div>
+                    <span th:text="${user.username}" class="fw-medium">username</span>
+                  </div>
+                </td>
+                <td th:text="${user.email}">email@example.com</td>
+                <td>
+                  <span th:text="${user.firstName + ' ' + user.lastName}">John Doe</span>
+                </td>
+                <td>
+                  <span th:if="${user.role == 'ROLE_ADMIN'}" class="badge bg-danger">Admin</span>
+                  <span th:if="${user.role == 'ROLE_USER'}" class="badge bg-primary">User</span>
+                  <span th:if="${user.role != 'ROLE_ADMIN' && user.role != 'ROLE_USER'}"
+                        class="badge bg-secondary" th:text="${user.role}">Other</span>
+                </td>
+                <td>
+                  <span th:if="${user.enabled}" class="badge bg-success">Active</span>
+                  <span th:unless="${user.enabled}" class="badge bg-warning text-dark">Inactive</span>
+                </td>
+                <td>
+                  <div class="btn-group btn-group-sm">
+                    <a th:href="@{'/admin/users/' + ${user.id} + '/edit'}"
+                       class="btn btn-outline-secondary" title="Edit User">
+                      <i class="bi bi-pencil"></i>
+                    </a>
+                    <button type="button" class="btn btn-outline-danger"
+                            th:data-bs-toggle="modal"
+                            th:data-bs-target="'#deleteModal' + ${user.id}"
+                            title="Delete User">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+
+                  <!-- Delete Confirmation Modal -->
+                  <div class="modal fade" th:id="'deleteModal' + ${user.id}" tabindex="-1"
+                       aria-labelledby="deleteModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                      <div class="modal-content border-0 shadow">
+                        <div class="modal-header bg-danger text-white">
+                          <h5 class="modal-title" id="deleteModalLabel">
+                            <i class="bi bi-exclamation-triangle me-2"></i>Confirm Delete
+                          </h5>
+                          <button type="button" class="btn-close btn-close-white"
+                                  data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                          <p>Are you sure you want to delete user
+                            <strong th:text="${user.username}">username</strong>?
+                          </p>
+                          <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-circle me-2"></i>
+                            This action cannot be undone.
+                          </div>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-secondary"
+                                  data-bs-dismiss="modal">Cancel</button>
+                          <a th:href="@{'/admin/users/' + ${user.id} + '/delete'}"
+                             class="btn btn-danger">
+                            <i class="bi bi-trash me-1"></i>Delete
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="card-footer bg-white py-3" th:if="${totalPages > 1}">
+          <nav>
+            <ul class="pagination justify-content-center mb-0">
+              <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                <a class="page-link" th:href="@{/admin/users(page=0, size=${size}, search=${search}, role=${role}, status=${status})}" aria-label="First">
+                  <span aria-hidden="true">&laquo;&laquo;</span>
+                </a>
+              </li>
+              <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                <a class="page-link" th:href="@{/admin/users(page=${currentPage - 1}, size=${size}, search=${search}, role=${role}, status=${status})}" aria-label="Previous">
+                  <span aria-hidden="true">&laquo;</span>
+                </a>
+              </li>
+
+              <!-- Page numbers -->
+              <li class="page-item"
+                  th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                  th:if="${i >= currentPage - 2 && i <= currentPage + 2}"
+                  th:classappend="${i == currentPage} ? 'active'">
+                <a class="page-link" th:href="@{/admin/users(page=${i}, size=${size}, search=${search}, role=${role}, status=${status})}" th:text="${i + 1}">1</a>
+              </li>
+
+              <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+                <a class="page-link" th:href="@{/admin/users(page=${currentPage + 1}, size=${size}, search=${search}, role=${role}, status=${status})}" aria-label="Next">
+                  <span aria-hidden="true">&raquo;</span>
+                </a>
+              </li>
+              <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+                <a class="page-link" th:href="@{/admin/users(page=${totalPages - 1}, size=${size}, search=${search}, role=${role}, status=${status})}" aria-label="Last">
+                  <span aria-hidden="true">&raquo;&raquo;</span>
+                </a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+
+      <!-- Page size selector -->
+      <div class="d-flex justify-content-end mt-3">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="pageSizeDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-list-ul me-1"></i> Show <span th:text="${size}">10</span> entries
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="pageSizeDropdown">
+            <li><a class="dropdown-item" th:classappend="${size == 5} ? 'active'" th:href="@{/admin/users(page=0, size=5, search=${search}, role=${role}, status=${status})}">5 entries</a></li>
+            <li><a class="dropdown-item" th:classappend="${size == 10} ? 'active'" th:href="@{/admin/users(page=0, size=10, search=${search}, role=${role}, status=${status})}">10 entries</a></li>
+            <li><a class="dropdown-item" th:classappend="${size == 25} ? 'active'" th:href="@{/admin/users(page=0, size=25, search=${search}, role=${role}, status=${status})}">25 entries</a></li>
+            <li><a class="dropdown-item" th:classappend="${size == 50} ? 'active'" th:href="@{/admin/users(page=0, size=50, search=${search}, role=${role}, status=${status})}">50 entries</a></li>
+          </ul>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Include the footer -->
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<!-- Bootstrap JS and other scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Additional CSS for enhanced styling -->
+<style>
+  /* Sidebar styling */
+  #sidebar .nav-link {
+    color: #495057;
+    transition: all 0.3s;
+  }
+
+  #sidebar .nav-link:hover {
+    background-color: #f8f9fa;
+    color: #0d6efd;
+  }
+
+  #sidebar .nav-link.active {
+    background-color: #e7f1ff;
+    color: #0d6efd;
+    font-weight: 500;
+  }
+
+  /* Avatar circle */
+  .avatar-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .avatar-sm {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Card hover effects */
+  .card {
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+
+  .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+  }
+
+  /* Table row hover */
+  tbody tr {
+    transition: background-color 0.2s;
+  }
+
+  tbody tr:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+  }
+
+  /* Button group hover effects */
+  .btn-group .btn {
+    transition: all 0.2s;
+  }
+
+  .btn-group .btn:hover {
+    z-index: 1;
+    transform: translateY(-2px);
+  }
+
+  /* Badge styling */
+  .badge {
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+
+  /* Page link styling */
+  .page-link {
+    color: #0d6efd;
+    border-radius: 0.25rem;
+    margin: 0 2px;
+  }
+
+  .page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+  }
+
+  /* Dropdown styling */
+  .dropdown-item.active {
+    background-color: #e7f1ff;
+    color: #0d6efd;
+  }
+</style>
+
+<!-- Additional JavaScript for enhanced UI -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Add active class to current nav item
+    const currentLocation = window.location.pathname;
+    const navLinks = document.querySelectorAll('.nav-link');
+
+    navLinks.forEach(link => {
+      const href = link.getAttribute('href');
+      if (href === currentLocation ||
+              (currentLocation.includes('/admin/users') && href.includes('/admin/users'))) {
+        link.classList.add('active');
+      }
+    });
+
+    // Auto-dismiss alerts after 5 seconds
+    const alerts = document.querySelectorAll('.alert');
+    alerts.forEach(alert => {
+      setTimeout(() => {
+        const bsAlert = new bootstrap.Alert(alert);
+        bsAlert.close();
+      }, 5000);
+    });
+
+    // Add tooltip initialization if needed
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+  });
+</script>
+</body>
+</html>
+

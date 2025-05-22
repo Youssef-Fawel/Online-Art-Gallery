@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="fragments/header :: head('Artwork Gallery')">
+  <title>Artwork Gallery</title>
+</head>
+<body>
+<!-- Include the header -->
+<div th:replace="fragments/header :: header"></div>
+
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex align-items-center">
+      <a href="javascript:history.back()" class="btn btn-outline-secondary me-3">
+        <i class="bi bi-arrow-left"></i> Back
+      </a>
+      <h1>Artwork Gallery</h1>
+    </div>
+    <!-- Admin controls moved to top -->
+    <div sec:authorize="hasRole('ADMIN')">
+      <a th:href="@{/artworks/new}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Add New Artwork
+      </a>
+    </div>
+  </div>
+
+  <!-- Search and filter form -->
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header bg-white">
+      <h5 class="mb-0">Search & Filter</h5>
+    </div>
+    <div class="card-body">
+      <form th:action="@{/artworks}" method="get" class="row g-3">
+        <div class="col-md-4">
+          <label for="search" class="form-label">Keyword</label>
+          <input type="text" class="form-control" id="search" name="search"
+                 th:value="${search}" placeholder="Search by title or description...">
+        </div>
+        <div class="col-md-3">
+          <label for="artistId" class="form-label">Artist</label>
+          <select class="form-select" id="artistId" name="artistId">
+            <option value="">All Artists</option>
+            <option th:each="artist : ${artists}"
+                    th:value="${artist.id}"
+                    th:text="${artist.name}"
+                    th:selected="${artistId != null && artistId == artist.id}">Artist Name</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label for="minPrice" class="form-label">Min Price</label>
+          <input type="number" class="form-control" id="minPrice" name="minPrice"
+                 th:value="${minPrice}" placeholder="Min $">
+        </div>
+        <div class="col-md-2">
+          <label for="maxPrice" class="form-label">Max Price</label>
+          <input type="number" class="form-control" id="maxPrice" name="maxPrice"
+                 th:value="${maxPrice}" placeholder="Max $">
+        </div>
+        <div class="col-md-1 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary w-100">Filter</button>
+        </div>
+        <!-- Hidden input for page size -->
+        <input type="hidden" name="size" value="6">
+      </form>
+    </div>
+  </div>
+
+  <!-- Artwork grid -->
+  <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-4">
+    <div th:if="${#lists.isEmpty(artworks)}" class="col-12">
+      <div class="alert alert-info text-center">
+        <i class="bi bi-info-circle me-2"></i> No artworks found matching your criteria.
+      </div>
+    </div>
+    <div th:each="artwork : ${artworks}" class="col">
+      <div class="card h-100 shadow-sm hover-shadow">
+        <div class="position-relative">
+          <img th:if="${artwork.imageUrl != null && !artwork.imageUrl.isEmpty()}"
+               th:src="@{'/uploads/artworks/' + ${artwork.imageUrl}}"
+               class="card-img-top" alt="Artwork Image"
+               style="height: 220px; object-fit: cover;">
+          <img th:unless="${artwork.imageUrl != null && !artwork.imageUrl.isEmpty()}"
+               src="/images/placeholder.jpg"
+               class="card-img-top" alt="Placeholder"
+               style="height: 220px; object-fit: cover;">
+          <div class="position-absolute top-0 end-0 p-2">
+            <span class="badge bg-primary" th:text="${artwork.medium}">Medium</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <h5 class="card-title" th:text="${artwork.title}">Artwork Title</h5>
+          <p class="card-text">
+            <small class="text-muted">By
+              <a th:if="${artwork.artist != null}"
+                 th:href="@{'/artists/' + ${artwork.artist.id}}"
+                 th:text="${artwork.artist.name}">Artist Name</a>
+              <span th:unless="${artwork.artist != null}">Unknown Artist</span>
+              • <span th:text="${artwork.year}">2023</span>
+            </small>
+          </p>
+          <p class="card-text" th:text="${#strings.abbreviate(artwork.description, 100)}">Description of the artwork...</p>
+          <p class="card-text fw-bold fs-5 text-primary"
+             th:text="${'$' + #numbers.formatDecimal(artwork.price, 0, 'COMMA', 2, 'POINT')}">$1,000.00</p>
+        </div>
+        <div class="card-footer bg-white d-flex justify-content-between">
+          <a th:href="@{'/artworks/' + ${artwork.id}}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-eye"></i> View Details
+          </a>
+          <div class="d-flex">
+            <!-- Add to Cart button - Only for non-admin users -->
+            <button sec:authorize="!hasRole('ADMIN') and isAuthenticated()"
+                    class="btn btn-sm btn-primary me-2 add-to-cart-btn"
+                    th:data-artwork-id="${artwork.id}"
+                    th:data-artwork-title="${artwork.title}">
+              <i class="bi bi-cart-plus"></i> Add to Cart
+            </button>
+            <!-- Admin controls -->
+            <div sec:authorize="hasRole('ADMIN')">
+              <a th:href="@{'/artworks/' + ${artwork.id} + '/edit'}"
+                 class="btn btn-sm btn-outline-secondary me-1">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <button type="button"
+                      class="btn btn-sm btn-outline-danger"
+                      data-bs-toggle="modal"
+                      th:data-bs-target="'#deleteModal' + ${artwork.id}">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Delete Confirmation Modal -->
+      <div class="modal fade" th:id="'deleteModal' + ${artwork.id}" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              Are you sure you want to delete "<span th:text="${artwork.title}"></span>"?
+              <p class="text-danger mt-2">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <a th:href="@{'/artworks/' + ${artwork.id} + '/delete'}" class="btn btn-danger">Delete</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div th:if="${artworksPage != null && artworksPage.totalPages > 1}"
+       class="d-flex justify-content-center">
+    <nav aria-label="Artwork pagination">
+      <ul class="pagination">
+        <li class="page-item" th:classappend="${artworksPage.first ? 'disabled' : ''}">
+          <a class="page-link"
+             th:href="@{/artworks(page=0, size=6, search=${search}, artistId=${artistId}, minPrice=${minPrice}, maxPrice=${maxPrice})}"
+             aria-label="First">
+            <span aria-hidden="true">&laquo;&laquo;</span>
+          </a>
+        </li>
+        <li class="page-item" th:classappend="${artworksPage.first ? 'disabled' : ''}">
+          <a class="page-link"
+             th:href="@{/artworks(page=${artworksPage.number - 1}, size=6, search=${search}, artistId=${artistId}, minPrice=${minPrice}, maxPrice=${maxPrice})}"
+             aria-label="Previous">
+            <span aria-hidden="true">&laquo;</span>
+          </a>
+        </li>
+        <li class="page-item"
+            th:each="i : ${#numbers.sequence(0, artworksPage.totalPages - 1)}"
+            th:classappend="${i == artworksPage.number ? 'active' : ''}">
+          <a class="page-link"
+             th:href="@{/artworks(page=${i}, size=6, search=${search}, artistId=${artistId}, minPrice=${minPrice}, maxPrice=${maxPrice})}"
+             th:text="${i + 1}">1</a>
+        </li>
+        <li class="page-item" th:classappend="${artworksPage.last ? 'disabled' : ''}">
+          <a class="page-link"
+             th:href="@{/artworks(page=${artworksPage.number + 1}, size=6, search=${search}, artistId=${artistId}, minPrice=${minPrice}, maxPrice=${maxPrice})}"
+             aria-label="Next">
+            <span aria-hidden="true">&raquo;</span>
+          </a>
+        </li>
+        <li class="page-item" th:classappend="${artworksPage.last ? 'disabled' : ''}">
+          <a class="page-link"
+             th:href="@{/artworks(page=${artworksPage.totalPages - 1}, size=6, search=${search}, artistId=${artistId}, minPrice=${minPrice}, maxPrice=${maxPrice})}"
+             aria-label="Last">
+            <span aria-hidden="true">&raquo;&raquo;</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+
+  <!-- Results count -->
+  <div class="text-center text-muted mt-3 mb-4">
+    Showing <span th:text="${artworks.size()}">0</span> of <span th:text="${artworksPage.totalElements}">0</span> artworks
+  </div>
+</div>
+
+<!-- Include the footer -->
+<div th:replace="fragments/footer :: footer"></div>
+
+<!-- Toast notification for cart actions -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+  <div id="cartToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="toast-header bg-success text-white">
+      <i class="bi bi-cart-check me-2"></i>
+      <strong class="me-auto">Cart</strong>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+    <div class="toast-body">
+      <span id="toastMessage">Item added to cart!</span>
+      <div class="mt-2 pt-2 border-top">
+        <a href="/cart" class="btn btn-sm btn-primary">View Cart</a>
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="toast">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Cart JavaScript -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Get CSRF token
+    const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+    // Initialize toast
+    const toastEl = document.getElementById('cartToast');
+    const toast = new bootstrap.Toast(toastEl, { delay: 5000 });
+    const toastMessage = document.getElementById('toastMessage');
+
+    // Add to cart buttons
+    document.querySelectorAll('.add-to-cart-btn').forEach(button => {
+      button.addEventListener('click', function() {
+        const artworkId = this.getAttribute('data-artwork-id');
+        const artworkTitle = this.getAttribute('data-artwork-title');
+        addToCart(artworkId, artworkTitle);
+      });
+    });
+
+    // Function to add to cart
+    function addToCart(artworkId, artworkTitle) {
+      fetch('/cart/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          [csrfHeader]: csrfToken
+        },
+        body: `artworkId=${artworkId}&quantity=1`
+      })
+              .then(response => response.json())
+              .then(data => {
+                if (data.success) {
+                  // Update cart count in header
+                  const cartCountEl = document.getElementById('cartCount');
+                  if (cartCountEl) {
+                    cartCountEl.textContent = data.cartCount;
+                  }
+                  // Show success toast
+                  toastMessage.textContent = `"${artworkTitle}" added to cart!`;
+                  toastEl.querySelector('.toast-header').classList.remove('bg-danger');
+                  toastEl.querySelector('.toast-header').classList.add('bg-success');
+                  toast.show();
+                } else {
+                  // Show error toast
+                  toastMessage.textContent = data.message || 'Error adding to cart';
+                  toastEl.querySelector('.toast-header').classList.remove('bg-success');
+                  toastEl.querySelector('.toast-header').classList.add('bg-danger');
+                  toast.show();
+                }
+              })
+              .catch(error => {
+                console.error('Error:', error);
+                // Show error toast
+                toastMessage.textContent = 'An error occurred while adding to cart';
+                toastEl.querySelector('.toast-header').classList.remove('bg-success');
+                toastEl.querySelector('.toast-header').classList.add('bg-danger');
+                toast.show();
+              });
+    }
+  });
+</script>
+
+<!-- Add hover effect styles -->
+<style>
+  .hover-shadow {
+    transition: all 0.3s ease;
+  }
+  .hover-shadow:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+  }
+</style>
+</body>
+</html>
+

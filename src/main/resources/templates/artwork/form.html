@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/header :: head(${artwork.id == null ? 'Add New Artwork' : 'Edit Artwork'})">
+    <title>Artwork Form</title>
+</head>
+<body>
+<!-- Include the header -->
+<div th:replace="fragments/header :: header"></div>
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0" th:text="${artwork.id == null ? 'Add New Artwork' : 'Edit Artwork'}">Artwork Form</h3>
+                </div>
+                <div class="card-body">
+                    <form th:action="${artwork.id == null ? '/artworks/new' : '/artworks/' + artwork.id + '/edit'}"
+                          method="post" enctype="multipart/form-data" th:object="${artwork}">
+
+                        <!-- Title -->
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Title <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="title" th:field="*{title}" required>
+                            <div class="text-danger" th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" th:field="*{description}" rows="4"></textarea>
+                            <div class="text-danger" th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Year -->
+                            <div class="col-md-6 mb-3">
+                                <label for="year" class="form-label">Year <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="year" th:field="*{year}" min="1" max="2099" required>
+                                <div class="text-danger" th:if="${#fields.hasErrors('year')}" th:errors="*{year}"></div>
+                            </div>
+
+                            <!-- Medium -->
+                            <div class="col-md-6 mb-3">
+                                <label for="medium" class="form-label">Medium</label>
+                                <input type="text" class="form-control" id="medium" th:field="*{medium}" placeholder="e.g., Oil on Canvas">
+                            </div>
+                        </div>
+
+                        <!-- Price - Updated to handle large values -->
+                        <div class="mb-3">
+                            <label for="priceString" class="form-label">Price ($) <span class="text-danger">*</span></label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="priceString"
+                                   name="priceString"
+                                   th:value="${artwork.price != null ? #numbers.formatDecimal(artwork.price, 1, 'COMMA', 2, 'POINT') : ''}"
+                                   placeholder="e.g., 70,000,000.00"
+                                   pattern="^[0-9,]+(\.[0-9]{1,2})?$"
+                                   title="Enter a valid price (e.g. 70,000,000.00)"
+                                   required>
+                            <div class="form-text">Enter price with commas for thousands (e.g. 70,000,000.00)</div>
+                            <!-- Hidden field for binding -->
+                            <input type="hidden" th:field="*{price}" />
+                            <div class="text-danger" th:if="${#fields.hasErrors('price')}" th:errors="*{price}"></div>
+                        </div>
+
+                        <!-- Artist -->
+                        <div class="mb-3">
+                            <label for="artist" class="form-label">Artist <span class="text-danger">*</span></label>
+                            <select class="form-select" id="artist" th:field="*{artist}" required>
+                                <option value="">-- Select Artist --</option>
+                                <option th:each="artist : ${artists}"
+                                        th:value="${artist.id}"
+                                        th:text="${artist.name}">Artist Name</option>
+                            </select>
+                            <div class="text-danger" th:if="${#fields.hasErrors('artist')}" th:errors="*{artist}"></div>
+                        </div>
+
+                        <!-- Image Upload -->
+                        <div class="mb-4">
+                            <label for="image" class="form-label">Artwork Image</label>
+                            <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                            <div class="form-text">Upload an image of the artwork (JPG, PNG, GIF). Max size: 5MB.</div>
+
+                            <!-- Show current image if editing -->
+                            <div th:if="${artwork.id != null && artwork.imageUrl != null}" class="mt-3">
+                                <p class="mb-2">Current image:</p>
+                                <div class="position-relative" style="max-width: 200px;">
+                                    <img th:src="@{'/uploads/artworks/' + ${artwork.imageUrl}}"
+                                         alt="Current Artwork Image" class="img-thumbnail">
+                                </div>
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="checkbox" id="removeImage" name="removeImage">
+                                    <label class="form-check-label" for="removeImage">Remove current image</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a th:href="${artwork.id == null ? '/artworks' : '/artworks/' + artwork.id}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Save Artwork
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include the footer -->
+<div th:replace="fragments/footer :: footer"></div>
+
+<!-- Form validation script -->
+<script>
+    // Example of client-side validation (you can expand this)
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(event) {
+            let isValid = true;
+
+            // Validate price (must be positive)
+            const priceString = document.getElementById('priceString').value;
+            if (priceString) {
+                // Remove commas and convert to number
+                const priceValue = parseFloat(priceString.replace(/,/g, ''));
+                if (isNaN(priceValue) || priceValue <= 0) {
+                    isValid = false;
+                    alert('Price must be greater than zero');
+                }
+            }
+
+            // Validate year (must be reasonable)
+            const year = document.getElementById('year').value;
+            const currentYear = new Date().getFullYear();
+            if (year < 1 || year > currentYear + 1) {
+                isValid = false;
+                alert('Please enter a valid year');
+            }
+
+            if (!isValid) {
+                event.preventDefault();
+            }
+        });
+    });
+</script>
+</body>
+</html>

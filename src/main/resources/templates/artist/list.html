@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="fragments/header :: head('Artists')">
+  <title>Artists - Art Gallery</title>
+</head>
+<body>
+<!-- Include the header -->
+<div th:replace="fragments/header :: header"></div>
+
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex align-items-center">
+      <a href="javascript:history.back()" class="btn btn-outline-secondary me-3">
+        <i class="bi bi-arrow-left"></i> Back
+      </a>
+      <h1>Artists</h1>
+    </div>
+    <div sec:authorize="hasRole('ADMIN')">
+      <a th:href="@{/artists/new}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Add New Artist
+      </a>
+    </div>
+  </div>
+
+  <!-- Search and Filter -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <form th:action="@{/artists}" method="get" class="row g-3">
+        <div class="col-md-4">
+          <input type="text" class="form-control" name="keyword" th:value="${keyword}" placeholder="Search by name...">
+        </div>
+        <div class="col-md-3">
+          <select class="form-select" name="country">
+            <option value="">All Countries</option>
+            <option th:each="c : ${countries}"
+                    th:value="${c}"
+                    th:text="${c}"
+                    th:selected="${c == country}"></option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <select class="form-select" name="sort">
+            <option value="name" th:selected="${sort == 'name'}">Name (A-Z)</option>
+            <option value="birthYear" th:selected="${sort == 'birthYear'}">Birth Year</option>
+            <option value="country" th:selected="${sort == 'country'}">Country</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-primary w-100">Search</button>
+          <!-- Add hidden input for size to always use 6 -->
+          <input type="hidden" name="size" value="6">
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Artists Grid -->
+  <div class="row">
+    <div th:if="${#lists.isEmpty(artists)}" class="col-12 text-center my-5">
+      <div class="alert alert-info">
+        <i class="bi bi-info-circle me-2"></i> No artists found.
+      </div>
+      <a sec:authorize="hasRole('ADMIN')" th:href="@{/artists/new}" class="btn btn-primary mt-3">Add the first artist</a>
+    </div>
+
+    <div th:each="artist : ${artists}" class="col-md-4 mb-4">
+      <div class="card h-100">
+        <div th:if="${artist.imageUrl != null && !artist.imageUrl.isEmpty()}">
+          <img th:src="@{'/uploads/artists/' + ${artist.imageUrl}}" class="card-img-top" alt="Artist Photo" style="height: 250px; object-fit: cover;">
+        </div>
+        <div th:unless="${artist.imageUrl != null && !artist.imageUrl.isEmpty()}" class="text-center pt-4">
+          <i class="bi bi-person-circle" style="font-size: 5rem; color: #ccc;"></i>
+        </div>
+        <div class="card-body">
+          <h5 class="card-title" th:text="${artist.name}">Artist Name</h5>
+          <p class="card-text text-muted">
+            <span th:text="${artist.country}">Country</span> •
+            <span th:text="${artist.birthYear}">Birth Year</span>
+            <span th:if="${artist.deathYear != null}"> - <span th:text="${artist.deathYear}">Death Year</span></span>
+          </p>
+          <p class="card-text" th:if="${artist.bio != null && !artist.bio.isEmpty()}" th:text="${#strings.abbreviate(artist.bio, 100)}">Artist biography...</p>
+        </div>
+        <div class="card-footer bg-transparent">
+          <div class="d-flex justify-content-between">
+            <a th:href="@{'/artists/' + ${artist.id}}" class="btn btn-sm btn-outline-primary">View Profile</a>
+            <div sec:authorize="hasRole('ADMIN')">
+              <a th:href="@{'/artists/' + ${artist.id} + '/edit'}" class="btn btn-sm btn-outline-secondary me-1">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <button type="button" class="btn btn-sm btn-outline-danger"
+                      data-bs-toggle="modal" th:data-bs-target="'#deleteModal' + ${artist.id}">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Delete Confirmation Modal -->
+      <div class="modal fade" th:id="'deleteModal' + ${artist.id}" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              Are you sure you want to delete the artist <strong th:text="${artist.name}"></strong>?
+              <p class="text-danger mt-2">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <form th:action="@{'/artists/' + ${artist.id} + '/delete'}" method="post">
+                <button type="submit" class="btn btn-danger">Delete</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div th:if="${totalPages > 1}" class="d-flex justify-content-center mt-4">
+    <nav aria-label="Page navigation">
+      <ul class="pagination">
+        <li class="page-item" th:classappend="${currentPage == 0 ? 'disabled' : ''}">
+          <a class="page-link" th:href="@{/artists(page=0, size=6, sort=${sort}, keyword=${keyword}, country=${country})}" aria-label="First">
+            <span aria-hidden="true">&laquo;&laquo;</span>
+          </a>
+        </li>
+        <li class="page-item" th:classappend="${currentPage == 0 ? 'disabled' : ''}">
+          <a class="page-link" th:href="@{/artists(page=${currentPage - 1}, size=6, sort=${sort}, keyword=${keyword}, country=${country})}" aria-label="Previous">
+            <span aria-hidden="true">&laquo;</span>
+          </a>
+        </li>
+        <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+            th:classappend="${currentPage == i ? 'active' : ''}">
+          <a class="page-link" th:href="@{/artists(page=${i}, size=6, sort=${sort}, keyword=${keyword}, country=${country})}" th:text="${i + 1}"></a>
+        </li>
+        <li class="page-item" th:classappend="${currentPage == totalPages - 1 ? 'disabled' : ''}">
+          <a class="page-link" th:href="@{/artists(page=${currentPage + 1}, size=6, sort=${sort}, keyword=${keyword}, country=${country})}" aria-label="Next">
+            <span aria-hidden="true">&raquo;</span>
+          </a>
+        </li>
+        <li class="page-item" th:classappend="${currentPage == totalPages - 1 ? 'disabled' : ''}">
+          <a class="page-link" th:href="@{/artists(page=${totalPages - 1}, size=6, sort=${sort}, keyword=${keyword}, country=${country})}" aria-label="Last">
+            <span aria-hidden="true">&raquo;&raquo;</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+
+  <!-- Results count -->
+  <div class="text-center text-muted mt-3">
+    Showing <span th:text="${artists.size()}">0</span> of <span th:text="${totalItems}">0</span> artists
+  </div>
+</div>
+
+<!-- Include the footer -->
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>

@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="fragments/header :: head('Welcome to Art Gallery')">
+  <title>Art Gallery - Home</title>
+  <th:block th:fragment="css">
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+  </th:block>
+</head>
+<body class="art-gallery-theme">
+<!-- Include the header -->
+<div th:replace="fragments/header :: header"></div>
+
+<!-- Hero Section with parallax effect -->
+<section class="hero-section py-5 mb-5">
+  <div class="hero-bg-gradient"></div>
+  <div class="hero-particles" id="particles-js"></div>
+  <div class="container position-relative">
+    <div class="row align-items-center">
+      <div class="col-lg-6">
+        <div class="hero-content fade-in-up">
+          <h1 class="display-3 fw-bold mb-3 text-white text-shadow">Discover <span class="highlight">Exceptional</span> Art</h1>
+          <p class="lead mb-4 text-white-75">Explore our curated collection of artworks from talented artists around the world.</p>
+          <div class="d-flex gap-3">
+            <a th:href="@{/artworks}" class="btn btn-light btn-lg shadow pulse-btn">
+              <i class="bi bi-grid-3x3-gap-fill me-2"></i>Browse Gallery
+            </a>
+            <a th:href="@{/artists}" class="btn btn-outline-light btn-lg hover-fill">
+              <i class="bi bi-people-fill me-2"></i>Meet the Artists
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-5 offset-lg-1">
+        <div class="card shadow-lg border-0 rounded-lg overflow-hidden floating-card fade-in-up">
+          <div class="card-header bg-primary text-white p-4">
+            <h2 class="h3 text-center mb-0 fw-bold">Welcome to Art Gallery</h2>
+          </div>
+          <div class="card-body p-4">
+            <p class="text-center mb-4">Our gallery features exceptional artwork from talented artists around the world. Browse our collection and find the perfect piece for your space.</p>
+
+            <!-- Login/Register buttons for quick access -->
+            <div class="d-grid gap-2 mt-4" sec:authorize="!isAuthenticated()">
+              <a th:href="@{/login}" class="btn btn-primary shadow-sm">
+                <i class="bi bi-box-arrow-in-right me-2"></i>Login
+              </a>
+              <a th:href="@{/register}" class="btn btn-outline-primary shadow-sm">
+                <i class="bi bi-person-plus me-2"></i>Register
+              </a>
+            </div>
+
+            <!-- Dashboard button for authenticated users -->
+            <div class="d-grid gap-2 mt-4" sec:authorize="isAuthenticated()">
+              <a th:href="${#authorization.expression('hasRole(''ROLE_ADMIN'')') ? '/dashboard/admin' : '/dashboard'}"
+                 class="btn btn-primary shadow-sm">
+                <i class="bi bi-speedometer2 me-2"></i>Go to Dashboard
+              </a>
+              <a th:href="@{/artworks}" class="btn btn-outline-primary shadow-sm">
+                <i class="bi bi-grid-3x3-gap-fill me-2"></i>Browse Artworks
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Featured Artworks - Enhanced Slider -->
+<section id="artworks" class="container-fluid mb-5 px-0">
+  <div class="container mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+      <h2 class="fw-bold section-title with-line">
+        <i class="bi bi-palette me-2"></i>Featured Artworks
+      </h2>
+      <a th:href="@{/artworks}" class="btn btn-outline-primary shadow-sm btn-with-icon">
+        <i class="bi bi-grid-3x3-gap-fill me-2"></i>View All
+      </a>
+    </div>
+  </div>
+
+  <!-- Artwork carousel with enhanced design -->
+  <div class="position-relative artwork-carousel">
+    <!-- Left button -->
+    <button id="prevArtworks" class="carousel-nav-btn shadow-sm position-absolute top-50 start-0 translate-middle-y z-index-1 ms-4"
+            aria-label="Previous artworks">
+      <i class="bi bi-chevron-left"></i>
+    </button>
+
+    <!-- Artworks container - Full width -->
+    <div class="artwork-slider-container">
+      <div th:if="${#lists.isEmpty(artworks)}" class="text-center py-5">
+        <div class="empty-state">
+          <i class="bi bi-easel2 display-1 text-muted"></i>
+          <p class="lead text-muted mt-3">No artworks available at the moment.</p>
+        </div>
+      </div>
+
+      <div th:each="artwork, stat : ${artworks}"
+           th:class="${'artwork-item ' + (stat.index > 0 ? 'd-none' : '')}"
+           th:data-index="${stat.index}">
+        <div class="card shadow-lg border-0 transition-hover mx-auto artwork-card">
+          <div class="row g-0 h-100">
+            <div class="col-md-8">
+              <div class="artwork-image-container">
+                <!-- Artwork image with proper path -->
+                <img th:if="${artwork.imageUrl != null && !artwork.imageUrl.isEmpty()}"
+                     th:src="@{'/uploads/artworks/' + ${artwork.imageUrl}}"
+                     class="img-fluid rounded-start artwork-image"
+                     alt="Artwork Image">
+
+                <!-- Fallback image if no image URL is available -->
+                <img th:unless="${artwork.imageUrl != null && !artwork.imageUrl.isEmpty()}"
+                     th:src="@{/images/artwork-placeholder.jpg}"
+                     class="img-fluid rounded-start artwork-image"
+                     alt="Artwork Image">
+
+                <!-- Artwork overlay with quick actions -->
+                <div class="artwork-overlay">
+                  <a th:href="@{/artworks/{id}(id=${artwork.id})}" class="btn btn-light btn-sm rounded-circle">
+                    <i class="bi bi-zoom-in"></i>
+                  </a>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card-body d-flex flex-column h-100 p-4">
+                <div>
+                  <span class="badge bg-primary mb-2">Featured</span>
+                  <h3 class="fw-bold mb-3" th:text="${artwork.title}">Artwork Title</h3>
+                  <div class="artwork-description mb-4 custom-scrollbar">
+                    <p th:text="${artwork.description}">Artwork Description</p>
+                  </div>
+                </div>
+                <div class="mt-auto">
+                  <a th:href="@{/artworks/{id}(id=${artwork.id})}" class="btn btn-primary shadow-sm w-100 btn-with-icon">
+                    <i class="bi bi-eye-fill me-2"></i>View Details
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right button -->
+    <button id="nextArtworks" class="carousel-nav-btn shadow-sm position-absolute top-50 end-0 translate-middle-y z-index-1 me-4"
+            aria-label="Next artworks">
+      <i class="bi bi-chevron-right"></i>
+    </button>
+
+    <!-- Slide indicators - Positioned closer to the slider -->
+    <div class="carousel-indicators-container">
+      <div class="carousel-indicators artwork-indicators">
+        <!-- Will be populated by JavaScript -->
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Featured Artists - Enhanced Slider -->
+<section id="artists" class="container-fluid mb-5 px-0 bg-light py-5 mt-5">
+  <div class="container mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+      <h2 class="fw-bold section-title with-line">
+        <i class="bi bi-people-fill me-2"></i>Featured Artists
+      </h2>
+      <a th:href="@{/artists}" class="btn btn-outline-primary shadow-sm btn-with-icon">
+        <i class="bi bi-person-lines-fill me-2"></i>View All
+      </a>
+    </div>
+  </div>
+
+  <!-- Artist carousel with enhanced design -->
+  <div class="position-relative artist-carousel container">
+    <!-- Left button -->
+    <button id="prevArtists" class="carousel-nav-btn shadow-sm position-absolute top-50 start-0 translate-middle-y z-index-1"
+            aria-label="Previous artists">
+      <i class="bi bi-chevron-left"></i>
+    </button>
+
+    <!-- Artists container -->
+    <div class="artist-slider-container">
+      <div th:if="${#lists.isEmpty(artists)}" class="text-center py-5">
+        <div class="empty-state">
+          <i class="bi bi-person-x display-1 text-muted"></i>
+          <p class="lead text-muted mt-3">No artists available at the moment.</p>
+        </div>
+      </div>
+
+      <div th:each="artist, stat : ${artists}"
+           th:class="${'artist-item ' + (stat.index > 0 ? 'd-none' : '')}"
+           th:data-index="${stat.index}">
+        <div class="card shadow-lg border-0 transition-hover mx-auto artist-card">
+          <div class="row g-0 h-100">
+            <div class="col-md-4 text-center py-4 d-flex flex-column justify-content-center artist-portrait-container">
+              <div class="artist-image-container mb-3">
+                <!-- Artist image with proper path -->
+                <img th:if="${artist.imageUrl != null && !artist.imageUrl.isEmpty()}"
+                     th:src="@{'/uploads/artists/' + ${artist.imageUrl}}"
+                     class="rounded-circle mx-auto d-block artist-portrait"
+                     alt="Artist Image">
+
+                <!-- Fallback image if no image URL is available -->
+                <img th:unless="${artist.imageUrl != null && !artist.imageUrl.isEmpty()}"
+                     th:src="@{/images/artist-placeholder.jpg}"
+                     class="rounded-circle mx-auto d-block artist-portrait"
+                     alt="Artist Image">
+              </div>
+              <div class="artist-social-links">
+                <a href="#" class="social-link" title="Instagram">
+                  <i class="bi bi-instagram"></i>
+                </a>
+                <a href="#" class="social-link" title="Twitter">
+                  <i class="bi bi-twitter"></i>
+                </a>
+                <a href="#" class="social-link" title="Website">
+                  <i class="bi bi-globe"></i>
+                </a>
+              </div>
+            </div>
+            <div class="col-md-8">
+              <div class="card-body p-4 d-flex flex-column h-100">
+                <div>
+                  <span class="badge bg-primary mb-2">Featured</span>
+                  <h3 class="fw-bold mb-3" th:text="${artist.name}">Artist Name</h3>
+                  <div class="artist-bio mb-4 custom-scrollbar">
+                    <p th:text="${artist.bio}">Artist Bio</p>
+                  </div>
+                </div>
+                <div class="mt-auto">
+                  <a th:href="@{/artists/{id}(id=${artist.id})}" class="btn btn-primary shadow-sm w-100 btn-with-icon">
+                    <i class="bi bi-person-badge-fill me-2"></i>View Profile
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right button -->
+    <button id="nextArtists" class="carousel-nav-btn shadow-sm position-absolute top-50 end-0 translate-middle-y z-index-1"
+            aria-label="Next artists">
+      <i class="bi bi-chevron-right"></i>
+    </button>
+
+    <!-- Slide indicators - Positioned closer to the slider -->
+    <div class="carousel-indicators-container">
+      <div class="carousel-indicators artist-indicators">
+        <!-- Will be populated by JavaScript -->
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Call to Action Section - Enhanced -->
+<section class="container mb-5">
+  <div class="row">
+    <div class="col-md-8 offset-md-2">
+      <div class="card bg-primary text-white shadow-lg border-0 rounded-lg overflow-hidden cta-card">
+        <div class="cta-pattern"></div>
+        <div class="card-body p-5 text-center position-relative">
+          <h2 class="fw-bold mb-3">Ready to Start Your Art Collection?</h2>
+          <p class="lead mb-4">Join our community of art enthusiasts and discover pieces that speak to you.</p>
+          <div class="d-flex justify-content-center gap-3">
+            <a th:href="@{/artworks}" class="btn btn-light btn-lg shadow btn-with-icon">
+              <i class="bi bi-grid-3x3-gap-fill me-2"></i>Browse Gallery
+            </a>
+            <a th:href="@{/contact}" class="btn btn-outline-light btn-lg btn-with-icon">
+              <i class="bi bi-chat-dots-fill me-2"></i>Contact Us
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+</section>
+
+<!-- Testimonials Section -->
+<section class="container-fluid bg-light py-5 mb-5">
+  <div class="container">
+    <h2 class="fw-bold section-title with-line text-center mb-4">
+      <i class="bi bi-chat-quote-fill me-2"></i>What Our Clients Say
+    </h2>
+
+    <div class="row testimonial-slider">
+      <div class="col-md-4">
+        <div class="testimonial-card shadow-sm">
+          <div class="testimonial-content">
+            <i class="bi bi-quote display-4 text-primary opacity-25"></i>
+            <p class="testimonial-text">The artwork I purchased from this gallery has transformed my living space. The quality and attention to detail are exceptional.</p>
+          </div>
+          <div class="testimonial-author">
+            <img th:src="@{static/images/client1.jpg}" alt="Client" class="testimonial-avatar">
+            <div>
+              <h5 class="mb-0">Sarah Johnson</h5>
+              <small class="text-muted">Art Collector</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="testimonial-card shadow-sm">
+          <div class="testimonial-content">
+            <i class="bi bi-quote display-4 text-primary opacity-25"></i>
+            <p class="testimonial-text">As an artist, I've pushed the boundaries of creativity with my Infinity Mirror Rooms and my lifelong exploration of polka dots and endless spaces.</p>
+          </div>
+          <div class="testimonial-author">
+            <img th:src="@{static/images/client2.jpg}" alt="Yayoi Kusama" class="testimonial-avatar">
+            <div>
+              <h5 class="mb-0">Yayoi Kusama</h5>
+              <small class="text-muted">Contemporary Artist</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="col-md-4">
+        <div class="testimonial-card shadow-sm">
+          <div class="testimonial-content">
+            <i class="bi bi-quote display-4 text-primary opacity-25"></i>
+            <p class="testimonial-text">The curation at this gallery is outstanding. Each piece tells a unique story, and the staff is knowledgeable and helpful.</p>
+          </div>
+          <div class="testimonial-author">
+            <img th:src="@{static/images/client3.jpg}" alt="Client" class="testimonial-avatar">
+            <div>
+              <h5 class="mb-0">Emily Rodriguez</h5>
+              <small class="text-muted">Interior Designer</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Newsletter Section -->
+<section class="container mb-5">
+  <div class="row">
+    <div class="col-lg-8 offset-lg-2">
+      <div class="card shadow-lg border-0 rounded-lg overflow-hidden newsletter-card">
+        <div class="card-body p-5">
+          <div class="row align-items-center">
+            <div class="col-md-6">
+              <h3 class="fw-bold mb-3">Stay Updated</h3>
+              <p class="mb-md-0">Subscribe to our newsletter to receive updates on new artworks, exhibitions, and special events.</p>
+            </div>
+            <div class="col-md-6">
+              <form class="newsletter-form">
+                <div class="input-group">
+                  <input type="email" class="form-control" placeholder="Your email address" aria-label="Email address" required>
+                  <button class="btn btn-primary" type="submit">
+                    <i class="bi bi-envelope-fill me-2"></i>Subscribe
+                  </button>
+                </div>
+                <small class="form-text text-muted mt-2">We respect your privacy and will never share your information.</small>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Include the footer -->
+<div th:replace="fragments/footer :: footer"></div>
+
+<!-- Back to top button -->
+<button id="backToTop" class="back-to-top-btn shadow-sm" aria-label="Back to top">
+  <i class="bi bi-arrow-up"></i>
+</button>
+
+<!-- Import CSS and JS files -->
+<link rel="stylesheet" th:href="@{static/css/home.css}">
+
+<!-- Particles.js for hero section -->
+<script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+
+<!-- Custom JS -->
+<script th:src="@{static/js/home.js}"></script>
+
+<!-- Page load animation and additional functionality -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Page load animation
+    document.body.classList.add('page-loaded');
+
+    // Initialize particles.js
+    if (typeof particlesJS !== 'undefined') {
+      particlesJS('particles-js', {
+        particles: {
+          number: { value: 80, density: { enable: true, value_area: 800 } },
+          color: { value: "#ffffff" },
+          opacity: { value: 0.5, random: false },
+          size: { value: 3, random: true },
+          line_linked: { enable: true, distance: 150, color: "#ffffff", opacity: 0.4, width: 1 }
+        },
+        interactivity: {
+          detect_on: "canvas",
+          events: {
+            onhover: { enable: true, mode: "repulse" },
+            onclick: { enable: true, mode: "push" }
+          }
+        }
+      });
+    }
+
+    // Back to top button functionality
+    const backToTopBtn = document.getElementById('backToTop');
+    if (backToTopBtn) {
+      window.addEventListener('scroll', function() {
+        if (window.pageYOffset > 300) {
+          backToTopBtn.classList.add('show');
+        } else {
+          backToTopBtn.classList.remove('show');
+        }
+      });
+
+      backToTopBtn.addEventListener('click', function() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
+  });
+</script>
+</body>
+</html>
+

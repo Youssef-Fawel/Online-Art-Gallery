@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="fragments/header :: head(${artist.id == null ? 'Add New Artist' : 'Edit Artist'})">
+    <title>Artist Form</title>
+</head>
+<body>
+<!-- Include the header -->
+<div th:replace="fragments/header :: header"></div>
+
+<div class="container my-5">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a th:href="@{/}">Home</a></li>
+            <li class="breadcrumb-item"><a th:href="@{/artists}">Artists</a></li>
+            <li class="breadcrumb-item active" aria-current="page" th:text="${artist.id == null ? 'Add New Artist' : 'Edit ' + artist.name}">Add/Edit Artist</li>
+        </ol>
+    </nav>
+
+    <!-- Alert Messages -->
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <span th:text="${errorMessage}">Error message</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h2 class="card-title mb-0" th:text="${artist.id == null ? 'Add New Artist' : 'Edit Artist'}">Add/Edit Artist</h2>
+        </div>
+        <div class="card-body">
+            <form th:action="${artist.id == null ? '/artists/new' : '/artists/' + artist.id + '/edit'}"
+                  th:object="${artist}"
+                  method="post"
+                  enctype="multipart/form-data">
+
+                <!-- Hidden ID field for updates -->
+                <input type="hidden" th:field="*{id}" />
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <!-- Name -->
+                        <div class="mb-3">
+                            <label for="name" class="form-label required-field">Name</label>
+                            <input type="text" class="form-control" id="name" th:field="*{name}" required>
+                            <div class="text-danger" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                        </div>
+
+                        <!-- Country -->
+                        <div class="mb-3">
+                            <label for="country" class="form-label required-field">Country</label>
+                            <input type="text" class="form-control" id="country" th:field="*{country}" required>
+                            <div class="text-danger" th:if="${#fields.hasErrors('country')}" th:errors="*{country}"></div>
+                        </div>
+
+                        <!-- Birth Year -->
+                        <div class="mb-3">
+                            <label for="birthYear" class="form-label required-field">Birth Year</label>
+                            <input type="number" class="form-control" id="birthYear" th:field="*{birthYear}" required>
+                            <div class="text-danger" th:if="${#fields.hasErrors('birthYear')}" th:errors="*{birthYear}"></div>
+                        </div>
+
+                        <!-- Death Year (optional) -->
+                        <div class="mb-3">
+                            <label for="deathYear" class="form-label">Death Year (if applicable)</label>
+                            <input type="number" class="form-control" id="deathYear" th:field="*{deathYear}">
+                            <div class="text-danger" th:if="${#fields.hasErrors('deathYear')}" th:errors="*{deathYear}"></div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <!-- Website -->
+                        <div class="mb-3">
+                            <label for="website" class="form-label">Website</label>
+                            <input type="url" class="form-control" id="website" th:field="*{website}" placeholder="https://example.com">
+                            <div class="text-danger" th:if="${#fields.hasErrors('website')}" th:errors="*{website}"></div>
+                        </div>
+
+                        <!-- Email -->
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" th:field="*{email}" placeholder="artist@example.com">
+                            <div class="text-danger" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                        </div>
+
+                        <!-- Featured Artist -->
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="featured" th:field="*{featured}">
+                            <label class="form-check-label" for="featured">Featured Artist</label>
+                            <div class="form-text">Featured artists are highlighted on the homepage</div>
+                        </div>
+
+                        <!-- Artist Photo -->
+                        <div class="mb-3">
+                            <label for="profileImage" class="form-label">Profile Image</label>
+                            <input type="file" class="form-control" id="profileImage" name="profileImage" accept="image/*">
+                            <div class="form-text">Upload a square image for best results (JPEG, PNG, max 5MB)</div>
+                        </div>
+
+                        <!-- Current Photo (if editing) -->
+                        <div class="mb-3" th:if="${artist.imageUrl != null && !artist.imageUrl.isEmpty()}">
+                            <label class="form-label">Current Profile Image</label>
+                            <div>
+                                <img th:src="@{'/uploads/artists/' + ${artist.imageUrl}}" alt="Artist Photo" class="img-thumbnail artist-profile-img">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Biography -->
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label for="bio" class="form-label">Biography</label>
+                            <textarea class="form-control" id="bio" th:field="*{bio}" rows="5"></textarea>
+                            <div class="text-danger" th:if="${#fields.hasErrors('bio')}" th:errors="*{bio}"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit buttons -->
+                <div class="d-flex justify-content-between mt-4">
+                    <a th:href="@{/artists}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Save Artist</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Include the footer -->
+<div th:replace="fragments/footer :: footer"></div>
+
+<!-- JavaScript to preview image before upload -->
+<script>
+    document.getElementById('profileImage').addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // Create preview if it doesn't exist
+                let preview = document.querySelector('.image-preview');
+                if (!preview) {
+                    preview = document.createElement('img');
+                    preview.className = 'image-preview mt-2 img-thumbnail artist-profile-img';
+                    event.target.parentNode.appendChild(preview);
+                }
+                preview.src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+</script>
+</body>
+</html>

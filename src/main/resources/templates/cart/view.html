@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/header :: head('Shopping Cart')}">
+  <title>Shopping Cart - Art Gallery</title>
+</head>
+<body>
+<!-- Include the header -->
+<div th:replace="~{fragments/header :: header}"></div>
+
+<div class="container my-5">
+  <div class="row">
+    <div class="col-12">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a th:href="@{/}">Home</a></li>
+          <li class="breadcrumb-item"><a th:href="@{/dashboard}">Dashboard</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Shopping Cart</li>
+        </ol>
+      </nav>
+
+      <h1 class="mb-4">Your Shopping Cart</h1>
+
+      <!-- Empty cart message -->
+      <div th:if="${cartItems == null || cartItems.empty}" class="alert alert-info">
+        <p class="mb-0">Your cart is empty. <a th:href="@{/artworks}" class="alert-link">Browse artworks</a> to add items to your cart.</p>
+      </div>
+
+      <!-- Cart items -->
+      <div th:if="${cartItems != null && !cartItems.empty}" class="card shadow-sm mb-4">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+              <tr>
+                <th>Artwork</th>
+                <th>Title</th>
+                <th>Artist</th>
+                <th>Price</th>
+                <th>Actions</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr th:each="item : ${cartItems}">
+                <td style="width: 100px;">
+                  <img th:if="${item.imageUrl}" th:src="@{'/uploads/artworks/' + ${item.imageUrl}}"
+                       class="img-thumbnail" alt="Artwork Image" style="max-width: 80px;">
+                  <img th:unless="${item.imageUrl}" th:src="@{/images/placeholder.jpg}"
+                       class="img-thumbnail" alt="Placeholder" style="max-width: 80px;">
+                </td>
+                <td>
+                  <a th:href="@{/artworks/{id}(id=${item.artworkId})}" th:text="${item.title}">Artwork Title</a>
+                </td>
+                <td th:text="${item.artistName}">Artist Name</td>
+                <td th:text="${'$' + #numbers.formatDecimal(item.price, 1, 'COMMA', 2, 'POINT')}">$1,000.00</td>
+                <td>
+                  <button class="btn btn-sm btn-outline-danger remove-item" th:data-item-id="${item.id}">
+                    <i class="bi bi-trash"></i> Remove
+                  </button>
+                </td>
+              </tr>
+              </tbody>
+              <tfoot class="table-light">
+              <tr>
+                <td colspan="3" class="text-end fw-bold">Total:</td>
+                <td class="fw-bold" th:text="${'$' + #numbers.formatDecimal(total, 1, 'COMMA', 2, 'POINT')}">$1,000.00</td>
+                <td></td>
+              </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cart actions -->
+      <div th:if="${cartItems != null && !cartItems.empty}" class="d-flex justify-content-between">
+        <form th:action="@{/cart/clear}" method="post">
+          <button type="submit" class="btn btn-outline-danger">
+            <i class="bi bi-trash"></i> Clear Cart
+          </button>
+        </form>
+        <div>
+          <a th:href="@{/artworks}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-arrow-left"></i> Continue Shopping
+          </a>
+          <a th:href="@{/checkout}" class="btn btn-primary">
+            <i class="bi bi-credit-card"></i> Proceed to Checkout
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Include the footer -->
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<!-- Cart JavaScript -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Get CSRF token
+    const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+    // Remove item buttons
+    document.querySelectorAll('.remove-item').forEach(button => {
+      button.addEventListener('click', function() {
+        const itemId = this.getAttribute('data-item-id');
+        removeCartItem(itemId);
+      });
+    });
+
+    // Function to remove cart item
+    function removeCartItem(itemId) {
+      if (confirm('Are you sure you want to remove this artwork from your cart?')) {
+        fetch('/cart/remove', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            [csrfHeader]: csrfToken
+          },
+          body: `itemId=${itemId}`
+        })
+                .then(response => response.json())
+                .then(data => {
+                  if (data.success) {
+                    // Reload the page to show updated cart
+                    window.location.reload();
+                  } else {
+                    alert('Error removing item: ' + data.message);
+                  }
+                })
+                .catch(error => {
+                  console.error('Error:', error);
+                  alert('An error occurred while removing the item');
+                });
+      }
+    }
+  });
+</script>
+</body>
+</html>

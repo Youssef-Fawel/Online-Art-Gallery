@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="fragments/header :: head(${artist.name})">
+    <title>Artist Profile</title>
+</head>
+<body>
+<!-- Include the header -->
+<div th:replace="fragments/header :: header"></div>
+
+<div class="container my-5">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a th:href="@{/}">Home</a></li>
+            <li class="breadcrumb-item"><a th:href="@{/artists}">Artists</a></li>
+            <li class="breadcrumb-item active" aria-current="page" th:text="${artist.name}">Artist Name</li>
+        </ol>
+    </nav>
+
+    <!-- Alert Messages -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${successMessage}">Success message</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <span th:text="${errorMessage}">Error message</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div class="row">
+        <!-- Artist Profile -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <img th:if="${artist.imageUrl}" th:src="@{'/uploads/artists/' + ${artist.imageUrl}}"
+                             class="artist-profile-img rounded-circle img-thumbnail" alt="Artist Image">
+                        <img th:unless="${artist.imageUrl}" th:src="@{/images/artist-placeholder.jpg}"
+                             class="artist-profile-img rounded-circle img-thumbnail" alt="Placeholder">
+                    </div>
+                    <h2 class="card-title mb-1" th:text="${artist.name}">Artist Name</h2>
+                    <p class="text-muted mb-3" th:if="${artist.country}" th:text="${artist.country}">Country</p>
+                    <p class="text-muted">
+                        <span th:text="${artist.birthYear}">1980</span>
+                        <span th:if="${artist.deathYear}"> - <span th:text="${artist.deathYear}">2020</span></span>
+                    </p>
+                    <div class="mb-3" th:if="${artist.featured}">
+                        <span class="badge bg-warning text-dark">Featured Artist</span>
+                    </div>
+                    <div class="d-flex justify-content-center gap-3 mb-4">
+                        <a th:if="${artist.website}" th:href="${artist.website}" target="_blank" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-globe"></i> Website
+                        </a>
+                        <a th:if="${artist.email}" th:href="'mailto:' + ${artist.email}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-envelope"></i> Email
+                        </a>
+                    </div>
+                    <div sec:authorize="hasRole('ADMIN')" class="mt-3">
+                        <a th:href="@{/artists/{id}/edit(id=${artist.id})}" class="btn btn-outline-secondary">
+                            <i class="bi bi-pencil"></i> Edit Profile
+                        </a>
+                        <button type="button" class="btn btn-outline-danger"
+                                data-bs-toggle="modal" data-bs-target="#deleteArtistModal">
+                            <i class="bi bi-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Artist Bio and Artworks -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Biography</h3>
+                </div>
+                <div class="card-body">
+                    <p th:if="${artist.bio}" th:text="${artist.bio}" class="mb-0">Artist biography text...</p>
+                    <p th:unless="${artist.bio}" class="text-muted mb-0">No biography available for this artist.</p>
+                </div>
+            </div>
+
+            <!-- Artist's Artworks -->
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">Artworks</h3>
+                    <span class="badge bg-primary" th:text="${artworks.size() + ' Artworks'}">10 Artworks</span>
+                </div>
+                <div class="card-body">
+                    <div th:if="${not #lists.isEmpty(artworks)}" class="row">
+                        <div th:each="artwork : ${artworks}" class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100 shadow-sm">
+                                <img th:if="${artwork.imageUrl}" th:src="@{'/uploads/artworks/' + ${artwork.imageUrl}}"
+                                     class="card-img-top" alt="Artwork Image" style="height: 150px; object-fit: cover;">
+                                <img th:unless="${artwork.imageUrl}" th:src="@{/images/placeholder.jpg}"
+                                     class="card-img-top" alt="Placeholder" style="height: 150px; object-fit: cover;">
+                                <div class="card-body">
+                                    <h6 class="card-title" th:text="${artwork.title}">Artwork Title</h6>
+                                    <p class="card-text small">
+                                        <span th:text="${artwork.year}">2023</span> •
+                                        <span th:text="${artwork.medium}">Medium</span>
+                                    </p>
+                                    <p class="card-text fw-bold" th:text="${'$' + #numbers.formatDecimal(artwork.price, 0, 'COMMA', 2, 'POINT')}">$1,000.00</p>
+                                </div>
+                                <div class="card-footer bg-white border-top-0">
+                                    <a th:href="@{/artworks/{id}(id=${artwork.id})}" class="btn btn-sm btn-outline-primary w-100">View Details</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div th:if="${#lists.isEmpty(artworks)}" class="text-center py-4">
+                        <i class="bi bi-easel fs-1 text-muted mb-3 d-block"></i>
+                        <p class="mb-0">This artist has no artworks in the gallery yet.</p>
+                        <div sec:authorize="hasRole('ADMIN')" class="mt-3">
+                            <a th:href="@{/artworks/new(artistId=${artist.id})}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> Add Artwork
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Artist Confirmation Modal -->
+<div class="modal fade" id="deleteArtistModal" tabindex="-1" aria-labelledby="deleteArtistModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteArtistModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong th:text="${artist.name}">this artist</strong>?</p>
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    This will also remove all artworks associated with this artist. This action cannot be undone.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form th:action="@{/artists/{id}/delete(id=${artist.id})}" method="post">
+                    <button type="submit" class="btn btn-danger">Delete Artist</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include the footer -->
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>

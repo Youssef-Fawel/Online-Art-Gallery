@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <title>User Profile</title>
+  <link rel="stylesheet" th:href="@{/static/css/styles.css}"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+</head>
+<body class="bg-light">
+<div class="container-fluid">
+  <div class="row">
+    <!-- Sidebar -->
+    <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block bg-white shadow-sm sidebar collapse">
+      <div class="position-sticky pt-4">
+        <div class="text-center mb-4 d-none d-md-block">
+          <div class="avatar-circle mx-auto mb-3 bg-primary">
+            <i class="fas fa-user-circle text-white"></i>
+          </div>
+          <h5 class="fw-bold" th:text="${user.username}">Username</h5>
+          <p class="small text-muted" th:text="${user.email}">user@example.com</p>
+        </div>
+        <ul class="nav flex-column">
+          <li class="nav-item mb-2">
+            <a class="nav-link rounded py-2 px-3" th:href="${#authorization.expression('hasRole(''ROLE_ADMIN'')') ? '/admin/dashboard' : '/dashboard'}">
+              <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+            </a>
+          </li>
+          <li class="nav-item mb-2">
+            <a class="nav-link rounded py-2 px-3" th:href="@{/artists}">
+              <i class="fas fa-user-tag me-2"></i> Artists
+            </a>
+          </li>
+          <li class="nav-item mb-2">
+            <a class="nav-link rounded py-2 px-3" th:href="@{/artworks}">
+              <i class="fas fa-image me-2"></i> Artworks
+            </a>
+          </li>
+          <li th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')')}" class="nav-item mb-2">
+            <a class="nav-link rounded py-2 px-3" th:href="@{/admin/users}">
+              <i class="fas fa-users me-2"></i> Users Management
+            </a>
+          </li>
+          <li class="nav-item mb-2">
+            <a class="nav-link active rounded py-2 px-3" th:href="@{/dashboard/profile}">
+              <i class="fas fa-user me-2"></i> Profile
+            </a>
+          </li>
+          <li class="nav-item mt-4">
+            <form th:action="@{/logout}" method="post">
+              <button class="nav-link border-0 bg-transparent text-danger rounded py-2 px-3 w-100 text-start" type="submit">
+                <i class="fas fa-sign-out-alt me-2"></i> Logout
+              </button>
+            </form>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- Main content -->
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+      <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-4 border-bottom">
+        <div>
+          <h1 class="h2 fw-bold mb-0">User Profile</h1>
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+              <li class="breadcrumb-item"><a th:href="${#authorization.expression('hasRole(''ROLE_ADMIN'')') ? '/admin/dashboard' : '/dashboard'}">Dashboard</a></li>
+              <li class="breadcrumb-item active" aria-current="page">Profile</li>
+            </ol>
+          </nav>
+        </div>
+      </div>
+
+      <!-- Success/Error Messages -->
+      <div th:if="${successMessage}" id="successAlert" class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+        <div class="d-flex align-items-center">
+          <i class="fas fa-check-circle me-2 fs-4"></i>
+          <span th:text="${successMessage}">Success message</span>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+
+      <div th:if="${errorMessage}" id="errorAlert" class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+        <div class="d-flex align-items-center">
+          <i class="fas fa-exclamation-triangle me-2 fs-4"></i>
+          <span th:text="${errorMessage}">Error message</span>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+
+      <div class="row">
+        <!-- Profile Information Card -->
+        <div class="col-lg-4 mb-4">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3">
+              <h5 class="mb-0 fw-bold">
+                <i class="fas fa-user-circle me-2 text-primary"></i>Profile Information
+              </h5>
+            </div>
+            <div class="card-body text-center">
+              <div class="avatar-circle mx-auto mb-3 bg-primary">
+                <i class="fas fa-user-circle display-4 text-white"></i>
+              </div>
+              <h4 class="fw-bold mb-1" th:text="${user.username}">Username</h4>
+              <p class="text-muted mb-3" th:text="${user.email}">user@example.com</p>
+
+              <div class="d-flex justify-content-center mb-3">
+                                    <span class="badge bg-primary me-2">
+                                        <i class="fas fa-shield-alt me-1"></i>
+                                        <span th:text="${#strings.substringAfter(user.role, 'ROLE_')}">User</span>
+                                    </span>
+                <span class="badge bg-success">
+                                        <i class="fas fa-check-circle me-1"></i>Active
+                                    </span>
+              </div>
+
+              <div class="text-start border-top pt-3 mt-3">
+                <p class="mb-1">
+                  <i class="fas fa-user me-2 text-primary"></i>
+                  <strong>Full Name:</strong>
+                  <span th:if="${user.firstName != null || user.lastName != null}"
+                        th:text="${(user.firstName != null ? user.firstName : '') + ' ' + (user.lastName != null ? user.lastName : '')}">
+                                            Full Name
+                                        </span>
+                  <span th:unless="${user.firstName != null || user.lastName != null}">Not provided</span>
+                </p>
+
+                <p class="mb-0">
+                  <i class="fas fa-info-circle me-2 text-primary"></i>
+                  <strong>Bio:</strong>
+                </p>
+                <p class="text-muted small mb-0" th:text="${user.bio != null && !user.bio.isEmpty() ? user.bio : 'No bio provided'}">
+                  User bio goes here
+                </p>
+              </div>
+            </div>
+            <div class="card-footer bg-white py-3">
+              <a th:href="${#authorization.expression('hasRole(''ROLE_ADMIN'')') ? '/admin/dashboard' : '/dashboard'}"
+                 class="btn btn-outline-secondary w-100">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Edit Profile Form Card -->
+        <div class="col-lg-8 mb-4">
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3">
+              <h5 class="mb-0 fw-bold">
+                <i class="fas fa-edit me-2 text-primary"></i>Edit Profile
+              </h5>
+            </div>
+            <div class="card-body">
+              <form th:action="@{/dashboard/update}" method="post" class="profile-form">
+                <!-- CSRF Token -->
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <input type="hidden" name="id" th:value="${user.id}"/>
+
+                <div class="row mb-3">
+                  <div class="col-md-6">
+                    <label for="firstName" class="form-label">First Name</label>
+                    <div class="input-group">
+                                                <span class="input-group-text bg-light">
+                                                    <i class="fas fa-user"></i>
+                                                </span>
+                      <input type="text" class="form-control" id="firstName" name="firstName"
+                             th:value="${user.firstName}" autocomplete="given-name"
+                             placeholder="Enter your first name">
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="lastName" class="form-label">Last Name</label>
+                    <div class="input-group">
+                                                <span class="input-group-text bg-light">
+                                                    <i class="fas fa-user"></i>
+                                                </span>
+                      <input type="text" class="form-control" id="lastName" name="lastName"
+                             th:value="${user.lastName}" autocomplete="family-name"
+                             placeholder="Enter your last name">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="row mb-3">
+                  <div class="col-md-6">
+                    <label for="username" class="form-label">Username</label>
+                    <div class="input-group">
+                                                <span class="input-group-text bg-light">
+                                                    <i class="fas fa-at"></i>
+                                                </span>
+                      <input type="text" class="form-control" id="username" name="username"
+                             th:value="${user.username}" required autocomplete="username"
+                             placeholder="Enter your username">
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="email" class="form-label">Email</label>
+                    <div class="input-group">
+                                                <span class="input-group-text bg-light">
+                                                    <i class="fas fa-envelope"></i>
+                                                </span>
+                      <input type="email" class="form-control" id="email" name="email"
+                             th:value="${user.email}" required autocomplete="email"
+                             placeholder="Enter your email">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <label for="bio" class="form-label">Bio</label>
+                  <div class="input-group">
+                                            <span class="input-group-text bg-light">
+                                                <i class="fas fa-info-circle"></i>
+                                            </span>
+                    <textarea class="form-control" id="bio" name="bio" rows="3"
+                              placeholder="Tell us about yourself..." th:text="${user.bio}"></textarea>
+                  </div>
+                  <div class="form-text">Share a brief description about yourself.</div>
+                </div>
+
+                <div class="row mb-3">
+                  <div class="col-md-6">
+                    <label for="password" class="form-label">New Password</label>
+                    <div class="input-group">
+                                                <span class="input-group-text bg-light">
+                                                    <i class="fas fa-lock"></i>
+                                                </span>
+                      <input type="password" class="form-control" id="password" name="password"
+                             placeholder="Leave blank to keep current password" autocomplete="new-password">
+                    </div>
+                    <div class="form-text">Leave blank if you don't want to change your password.</div>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                    <div class="input-group">
+                                                <span class="input-group-text bg-light">
+                                                    <i class="fas fa-lock"></i>
+                                                </span>
+                      <input type="password" class="form-control" id="confirmPassword" name="confirmPassword"
+                             placeholder="Confirm your new password" autocomplete="new-password">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                  <button type="reset" class="btn btn-outline-secondary me-md-2">
+                    <i class="fas fa-undo me-1"></i>Reset
+                  </button>
+                  <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-1"></i>Save Changes
+                  </button>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Additional CSS for enhanced styling -->
+<style>
+  /* Sidebar styling */
+  #sidebar .nav-link {
+    color: #495057;
+    transition: all 0.3s;
+  }
+
+  #sidebar .nav-link:hover {
+    background-color: #f8f9fa;
+    color: #0d6efd;
+  }
+
+  #sidebar .nav-link.active {
+    background-color: #e7f1ff;
+    color: #0d6efd;
+    font-weight: 500;
+  }
+
+  /* Avatar circle */
+  .avatar-circle {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Card hover effects */
+  .card {
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+
+  .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+  }
+
+  /* Form control focus */
+  .form-control:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  }
+
+  /* Badge styling */
+  .badge {
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+</style>
+
+<!-- JavaScript for password confirmation validation -->
+<script>
+  document.querySelector('.profile-form').addEventListener('submit', function(e) {
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    if (password && password !== confirmPassword) {
+      e.preventDefault();
+
+      // Create alert
+      const alertDiv = document.createElement('div');
+      alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+      alertDiv.role = 'alert';
+
+      const alertContent = document.createElement('div');
+      alertContent.className = 'd-flex align-items-center';
+
+      const icon = document.createElement('i');
+      icon.className = 'fas fa-exclamation-triangle me-2 fs-4';
+
+      const message = document.createElement('span');
+      message.textContent = 'Passwords do not match!';
+
+      const closeButton = document.createElement('button');
+      closeButton.type = 'button';
+      closeButton.className = 'btn-close';
+      closeButton.setAttribute('data-bs-dismiss', 'alert');
+      closeButton.setAttribute('aria-label', 'Close');
+
+      alertContent.appendChild(icon);
+      alertContent.appendChild(message);
+      alertDiv.appendChild(alertContent);
+      alertDiv.appendChild(closeButton);
+
+      // Insert alert before the form
+      const form = document.querySelector('.profile-form');
+      form.parentNode.insertBefore(alertDiv, form);
+
+      // Scroll to the top of the form
+      window.scrollTo({
+        top: form.offsetTop - 100,
+        behavior: 'smooth'
+      });
+    }
+  });
+
+  // Auto-hide alerts after 5 seconds
+  document.addEventListener('DOMContentLoaded', function() {
+    const successAlert = document.querySelector('.alert-success');
+    if (successAlert) {
+      successAlert.id = 'successAlert';
+      setTimeout(function() {
+        successAlert.style.opacity = '0';
+        successAlert.style.transition = 'opacity 0.5s ease';
+        setTimeout(function() {
+          successAlert.style.display = 'none';
+        }, 500);
+      }, 5000);
+    }
+
+    const errorAlert = document.querySelector('.alert-danger');
+    if (errorAlert) {
+      errorAlert.id = 'errorAlert';
+      setTimeout(function() {
+        errorAlert.style.opacity = '0';
+        errorAlert.style.transition = 'opacity 0.5s ease';
+        setTimeout(function() {
+          errorAlert.style.display = 'none';
+        }, 500);
+      }, 5000);
+    }
+  });
+</script>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+

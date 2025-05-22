@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="fragments/header :: head(${artwork.title})">
+    <title>Artwork Details</title>
+</head>
+<body>
+<!-- Include the header -->
+<div th:replace="fragments/header :: header"></div>
+
+<div class="container my-5">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a th:href="@{/}">Home</a></li>
+            <li class="breadcrumb-item"><a th:href="@{/artworks}">Artworks</a></li>
+            <li class="breadcrumb-item active" aria-current="page" th:text="${artwork.title}">Artwork Title</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- Artwork Image -->
+        <div class="col-lg-7 mb-4">
+            <div class="card shadow-sm">
+                <div class="artwork-detail-img-container bg-light d-flex justify-content-center align-items-center" style="min-height: 400px;">
+                    <img th:if="${artwork.imageUrl}" th:src="@{'/uploads/artworks/' + ${artwork.imageUrl}}"
+                         class="artwork-detail-img img-fluid rounded" alt="Artwork Image" style="max-height: 500px;">
+                    <img th:unless="${artwork.imageUrl}" th:src="@{/images/placeholder.jpg}"
+                         class="artwork-detail-img img-fluid rounded" alt="Placeholder" style="max-height: 500px;">
+                </div>
+            </div>
+        </div>
+
+        <!-- Artwork Details -->
+        <div class="col-lg-5">
+            <h1 class="mb-2" th:text="${artwork.title}">Artwork Title</h1>
+            <div class="mb-3">
+                <a th:if="${artwork.artist}" th:href="@{/artists/{id}(id=${artwork.artist.id})}"
+                   class="text-decoration-none fs-5" th:text="${artwork.artist.name}">Artist Name</a>
+                <span th:unless="${artwork.artist}" class="fs-5">Unknown Artist</span>
+            </div>
+            <div class="mb-4">
+                <!-- Updated price formatting to handle large values -->
+                <p class="fs-4 fw-bold text-primary" th:text="${'$' + #numbers.formatDecimal(artwork.price, 1, 'COMMA', 2, 'POINT')}">$1,000.00</p>
+            </div>
+            <div class="mb-4">
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <h6 class="text-muted">Year</h6>
+                        <p th:text="${artwork.year}">2023</p>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <h6 class="text-muted">Medium</h6>
+                        <p th:text="${artwork.medium ?: 'Not specified'}">Oil on Canvas</p>
+                    </div>
+                </div>
+            </div>
+            <div class="mb-4">
+                <h5>Description</h5>
+                <p th:text="${artwork.description ?: 'No description available.'}">Artwork description goes here...</p>
+            </div>
+
+            <!-- Action Buttons - Only show for non-admin users -->
+            <div class="d-grid gap-2 mb-4" sec:authorize="!hasRole('ADMIN')">
+                <button id="addToCartBtn" class="btn btn-primary btn-lg"
+                        th:data-artwork-id="${artwork.id}"
+                        th:data-artwork-title="${artwork.title}">
+                    <i class="bi bi-cart-plus"></i> Add to Cart
+                </button>
+                <button class="btn btn-outline-secondary">
+                    <i class="bi bi-heart"></i> Add to Favorites
+                </button>
+            </div>
+
+            <!-- Admin/Artist Actions -->
+            <div class="d-flex gap-2 mt-4" sec:authorize="hasAnyRole('ADMIN') or (hasRole('ARTIST') and #authentication.principal.id == artwork.artist.id)">
+                <a th:href="@{/artworks/{id}/edit(id=${artwork.id})}" class="btn btn-outline-primary">
+                    <i class="bi bi-pencil"></i> Edit
+                </a>
+                <a th:href="@{/artworks/{id}/delete(id=${artwork.id})}" class="btn btn-outline-danger"
+                   onclick="return confirm('Are you sure you want to delete this artwork?')">
+                    <i class="bi bi-trash"></i> Delete
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Related Artworks -->
+    <div class="mt-5" th:if="${relatedArtworks != null and !relatedArtworks.empty}">
+        <h3 class="mb-4">More from this Artist</h3>
+        <div class="row">
+            <div th:each="relatedArt : ${relatedArtworks}" class="col-md-3 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <img th:if="${relatedArt.imageUrl}" th:src="@{'/uploads/artworks/' + ${relatedArt.imageUrl}}"
+                         class="card-img-top" alt="Related Artwork" style="height: 150px; object-fit: cover;">
+                    <img th:unless="${relatedArt.imageUrl}" th:src="@{/images/placeholder.jpg}"
+                         class="card-img-top" alt="Placeholder" style="height: 150px; object-fit: cover;">
+                    <div class="card-body">
+                        <h6 class="card-title" th:text="${relatedArt.title}">Related Artwork Title</h6>
+                        <!-- Updated price formatting to handle large values -->
+                        <p class="card-text small" th:text="${'$' + #numbers.formatDecimal(relatedArt.price, 1, 'COMMA', 2, 'POINT')}">$1,000.00</p>
+                        <a th:href="@{/artworks/{id}(id=${relatedArt.id})}" class="stretched-link"></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include the footer -->
+<div th:replace="fragments/footer :: footer"></div>
+
+<!-- Toast notification for cart actions -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="cartToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header bg-success text-white">
+            <i class="bi bi-cart-check me-2"></i>
+            <strong class="me-auto">Cart</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            <span id="toastMessage">Item added to cart!</span>
+            <div class="mt-2 pt-2 border-top">
+                <a href="/cart" class="btn btn-sm btn-primary">View Cart</a>
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="toast">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cart JavaScript -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get CSRF token
+        const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+        // Initialize toast
+        const toastEl = document.getElementById('cartToast');
+        const toast = new bootstrap.Toast(toastEl, { delay: 5000 });
+        const toastMessage = document.getElementById('toastMessage');
+
+        // Add to cart button
+        const addToCartBtn = document.getElementById('addToCartBtn');
+        if (addToCartBtn) {
+            addToCartBtn.addEventListener('click', function() {
+                const artworkId = this.getAttribute('data-artwork-id');
+                const artworkTitle = this.getAttribute('data-artwork-title');
+                addToCart(artworkId, artworkTitle);
+            });
+        }
+
+        // Function to add to cart
+        function addToCart(artworkId, artworkTitle) {
+            fetch('/cart/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    [csrfHeader]: csrfToken
+                },
+                body: `artworkId=${artworkId}&quantity=1`
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update cart count in header
+                        const cartCountEl = document.getElementById('cartCount');
+                        if (cartCountEl) {
+                            cartCountEl.textContent = data.cartCount;
+                        }
+
+                        // Show success toast
+                        toastMessage.textContent = `"${artworkTitle}" added to cart!`;
+                        toastEl.querySelector('.toast-header').classList.remove('bg-danger');
+                        toastEl.querySelector('.toast-header').classList.add('bg-success');
+                        toast.show();
+
+                        // Change button text temporarily
+                        addToCartBtn.innerHTML = '<i class="bi bi-check-circle"></i> Added to Cart';
+                        addToCartBtn.classList.add('btn-success');
+                        addToCartBtn.classList.remove('btn-primary');
+
+                        // Reset button after 2 seconds
+                        setTimeout(() => {
+                            addToCartBtn.innerHTML = '<i class="bi bi-cart-plus"></i> Add to Cart';
+                            addToCartBtn.classList.remove('btn-success');
+                            addToCartBtn.classList.add('btn-primary');
+                        }, 2000);
+                    } else {
+                        // Show error toast
+                        toastMessage.textContent = data.message || 'Error adding to cart';
+                        toastEl.querySelector('.toast-header').classList.remove('bg-success');
+                        toastEl.querySelector('.toast-header').classList.add('bg-danger');
+                        toast.show();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    // Show error toast
+                    toastMessage.textContent = 'An error occurred while adding to cart';
+                    toastEl.querySelector('.toast-header').classList.remove('bg-success');
+                    toastEl.querySelector('.toast-header').classList.add('bg-danger');
+                    toast.show();
+                });
+        }
+    });
+</script>
+</body>
+</html>

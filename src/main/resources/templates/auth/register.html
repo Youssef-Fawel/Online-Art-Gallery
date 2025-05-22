@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/header :: head('Register')">
+  <title>Register - Art Gallery</title>
+</head>
+<body>
+<!-- Include the header -->
+<div th:replace="fragments/header :: header"></div>
+
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+
+      <div class="card shadow">
+        <div class="card-body p-5">
+          <h2 class="text-center mb-4">Create an Account</h2>
+
+          <form th:action="@{/register}" th:object="${user}" method="post">
+            <!-- First Name -->
+            <div class="mb-3">
+              <label for="firstName" class="form-label">First Name</label>
+              <input type="text" class="form-control" id="firstName" th:field="*{firstName}" required>
+              <div class="text-danger" th:if="${#fields.hasErrors('firstName')}" th:text="${#fields.errors('firstName')[0]}"></div>
+            </div>
+
+            <!-- Last Name -->
+            <div class="mb-3">
+              <label for="lastName" class="form-label">Last Name</label>
+              <input type="text" class="form-control" id="lastName" th:field="*{lastName}" required>
+              <div class="text-danger" th:if="${#fields.hasErrors('lastName')}" th:text="${#fields.errors('lastName')[0]}"></div>
+            </div>
+
+            <!-- Username -->
+            <div class="mb-3">
+              <label for="username" class="form-label">Username</label>
+              <input type="text" class="form-control" id="username" th:field="*{username}" required>
+              <!-- Single error display with th:unless to ensure only one message shows -->
+              <div class="text-danger" th:if="${usernameError != null}" th:text="${usernameError}"></div>
+              <div class="text-danger" th:unless="${usernameError != null}" th:if="${#fields.hasErrors('username')}" th:text="${#fields.errors('username')[0]}"></div>
+            </div>
+
+            <!-- Email -->
+            <div class="mb-3">
+              <label for="email" class="form-label">Email</label>
+              <input type="email" class="form-control" id="email" th:field="*{email}" required>
+              <!-- Single error display with th:unless to ensure only one message shows -->
+              <div class="text-danger" th:if="${emailError != null}" th:text="${emailError}"></div>
+              <div class="text-danger" th:unless="${emailError != null}" th:if="${#fields.hasErrors('email')}" th:text="${#fields.errors('email')[0]}"></div>
+            </div>
+
+            <!-- Password -->
+            <div class="mb-3">
+              <label for="password" class="form-label">Password</label>
+              <input type="password" class="form-control" id="password" name="password" required>
+              <div class="text-danger" th:if="${passwordError != null}" th:text="${passwordError}"></div>
+              <div class="text-danger" th:unless="${passwordError != null}" th:if="${#fields.hasErrors('password')}" th:text="${#fields.errors('password')[0]}"></div>
+              <small class="form-text text-muted">Password must be at least 8 characters long.</small>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="d-grid gap-2 mt-4">
+              <button type="submit" class="btn btn-primary">Register</button>
+            </div>
+          </form>
+
+          <div class="mt-4 text-center">
+            <p>Already have an account? <a th:href="@{/login}">Login here</a></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Include the footer -->
+<div th:replace="fragments/footer :: footer"></div>
+
+<!-- Optional: Add JavaScript to auto-dismiss alerts after a few seconds -->
+<script>
+  // Auto-dismiss alerts after 5 seconds
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+      const alerts = document.querySelectorAll('.alert');
+      alerts.forEach(function(alert) {
+        const bsAlert = new bootstrap.Alert(alert);
+        bsAlert.close();
+      });
+    }, 5000);
+  });
+</script>
+</body>
+</html>
